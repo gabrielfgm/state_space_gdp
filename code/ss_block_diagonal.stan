@@ -3,6 +3,12 @@
 // This Stan program defines a simple model, with a
 // vector of values 'y' modeled as normally distributed
 // with mean 'mu' and standard deviation 'sigma'.
+functions { // to match published paper. stolen from here https://groups.google.com/forum/#!msg/stan-users/sW61HeIT24I/UaLcCHPABQAJ
+   // ignoring the 2pi constant
+   real IG_log(real x, real mu, real shape){
+     return 0.5 * log(shape) - 1.5 * log(x) - shape * square( (x - mu) / mu) / x;
+   }
+}
 
 data {
   int T; // number of obs
@@ -25,11 +31,15 @@ transformed parameters {
 }
 model {
   // priors
-  xhat[1] ~ normal(0,5);
-  sigma_state ~ normal(10, 15); 
+  xhat[1] ~ normal(3,10);
+  sigma_state ~ IG(10, 15); 
   gamma ~ normal(3, 10);
   theta ~ normal(0.3, 1);
-  sigma_signal ~ normal(10, 15);
+  
+  for (p in 1:P) {
+    sigma_signal[p] ~ IG(10, 15);
+  }
+  
   Omega ~ lkj_corr(1);
 
   // State Equation
@@ -40,16 +50,6 @@ model {
     Y[t, ] ~ multi_normal(rep_row_vector(xhat[t-1], 2), Sigma);
   }
 }
-
-
-
-
-
-
-
-
-
-
 
 
 

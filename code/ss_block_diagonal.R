@@ -98,7 +98,7 @@ library(readxl)
 df <- read_xlsx("../data/gdpplus.xlsx")
 df
 
-y_mat <- as.matrix(df[1:239,5:6])
+y_mat <- as.matrix(df[1:208,5:6])
 
 n_obs <- nrow(y_mat)
 n_param <- ncol(y_mat)
@@ -128,7 +128,7 @@ summary(fit_stan_gdp, pars = c("gamma", "theta",
 # extract median estimates
 sum_xhat <- as_tibble(summary(fit_stan_gdp, pars = "xhat", probs = c(0.1, 0.5, 0.9))$summary)
 
-sum_xhat$true_state <- df$GDPPLUS_DATA[1:239]
+sum_xhat$true_state <- df$GDPPLUS_DATA[1:208]
 
 sum_xhat %>% 
   ggplot(aes(x = 1:n_obs, y = `50%`)) + 
@@ -145,6 +145,6 @@ sum_xhat %>%
 sum_xhat %>% 
   ggplot(aes(true_state, `50%`)) +
   geom_point() +
-  hrbrthemes::theme_ipsum_rc() +
+  hrbrthemes::theme_ipsum() +
   labs(title = "Estimated Median and True State Generating Variable",
        x = "GDPPlus Fed", y = "Estimated Medians")
