@@ -57,14 +57,12 @@ plot(fit_stan, pars = "gamma") + geom_vline(xintercept = true_gamma)
 # check theta
 plot(fit_stan, pars = "theta") + geom_vline(xintercept = true_theta)
 
+# check Sigma
+plot(fit_stan, pars = "Sigma")
+
 # check variances
 plot(fit_stan, pars = "sigma_signal") + geom_vline(xintercept = true_sigma_g)
 plot(fit_stan, pars = "sigma_state") + geom_vline(xintercept = true_sigma_s)
-
-# Plot the estimated state against the true
-
-# mcmc_intervals(fit_stan, regex_pars = "xhat") + coord_flip()+ 
-#   theme(axis.text.x = element_text(angle = 90, hjust = 1))
 
 # extract median estimates
 sum_xhat <- as_tibble(summary(fit_stan, pars = "xhat", probs = c(0.1, 0.5, 0.9))$summary)
@@ -86,7 +84,7 @@ sum_xhat %>%
 sum_xhat %>% 
   ggplot(aes(true_state, `50%`)) +
   geom_point() +
-  hrbrthemes::theme_ipsum_rc() +
+  hrbrthemes::theme_ipsum() +
   geom_abline(slope = true_theta, intercept = true_gamma*(1-true_theta), 
               color = "coral")+
   labs(title = "Estimated Median and True State Generating Variable",
@@ -109,16 +107,18 @@ n_param <- ncol(y_mat)
 
 data <- list(T = n_obs, P = n_param, Y = y_mat)
 
-fit_stan_gdp <- stan("ss_simple.stan", data = data, 
+fit_stan_gdp <- stan("ss_block_diagonal.stan", data = data, 
                      chains = 4, iter = 4000)
 
 ## Diagnosis of small model
 
-# check gamma
-plot(fit_stan_gdp, pars = c("gamma", "theta", "sigma_signal", "sigma_state"))
+# check gamma, theta, etc. coefficients look similar 
+plot(fit_stan_gdp, pars = c("gamma", "theta", "sigma_signal", 
+                            "sigma_state", "Sigma"))
 
-summary(fit_stan_gdp, pars = c("gamma", "theta", "sigma_signal", "sigma_state"), 
-        probs = c(0.1, 0.5, 0.9))$summary
+summary(fit_stan_gdp, pars = c("gamma", "theta", 
+                               "sigma_state", "Sigma"), 
+        probs = c(0.25, 0.5, 0.75))$summary
 
 # Plot the estimated state against the true
 

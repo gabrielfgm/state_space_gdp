@@ -20,7 +20,8 @@ parameters {
 }
 transformed parameters {
   cov_matrix[P] Sigma; // multivariate cov mat for signal
-  Sigma = quad_form_diag(Omega, sigma_signal); 
+  
+  Sigma = quad_form_diag(Omega, sigma_signal);
 }
 model {
   // priors
@@ -32,13 +33,11 @@ model {
   Omega ~ lkj_corr(1);
 
   // State Equation
-  for(t in 2:T) {
-    xhat[t] ~ normal(gamma[1]*(1-theta[1]) + xhat[t-1]*theta[1],sigma_state);
-  }
+  xhat[2:T] ~ normal(gamma[1]*(1-theta[1]) + xhat[1:(T-1)]*theta[1],sigma_state);
 
   // Measurement Equations
-  for (t in 1:T) {
-    Y[t, ] ~ multi_normal(xhat[t], Sigma);
+  for (t in 2:T) {
+    Y[t, ] ~ multi_normal(rep_row_vector(xhat[t-1], 2), Sigma);
   }
 }
 
