@@ -1,0 +1,1 @@
+python3 -m readme2tex --output README.md to_compile_readme.md
