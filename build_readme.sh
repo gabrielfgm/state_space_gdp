@@ -1,1 +1,0 @@
-python3 -m readme2tex --nocdn --svgdir svgs --username gabrielfgm --project state_space_gdp --output README.md to_compile_readme.md
