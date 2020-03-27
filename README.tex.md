@@ -16,7 +16,7 @@ $x_t = \mu (1 - \rho) + \rho x_{t-1} + \eta_t.$
 
 An important consideration is the covariance structure of our measurements of GDP. It is reasonable to think that they are likely to be correlated, thus we model the covariance of our system as block-diagonal in the signals, so that the 4 $\times$ 4 matrix $\Sigma$ has zeros in rows 2:4 of column 1, and in columns 2:4 of row 1.
 
-\begin{equation}
+$$
 \Sigma = 
 \begin{bmatrix}
 \sigma_{gg} & 0 & 0 & 0 \\
@@ -24,7 +24,7 @@ An important consideration is the covariance structure of our measurements of GD
 0 & \sigma_{ei} & \sigma_{ee} & \sigma_{eo} \\
 0 & \sigma_{oi} & \sigma_{oe} & \sigma_{oo}
 \end{bmatrix}
-\end{equation}
+$$
 
 We are unfortunately constrained initially to a block-diagonal formulation 
 so that the system remains identifiable. Aruoba et. al. suggest two approaches to relaxing this assumption which I will try to incorporate later.
