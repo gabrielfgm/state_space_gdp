@@ -59,3 +59,11 @@ We are unfortunately constrained initially to a block-diagonal
 formulation so that the system remains identifiable. Aruoba et.
 al. suggest two approaches to relaxing this assumption which I will try
 to incorporate later.
+
+As a result of this formulation, we need to estimate 9 parameters:
+![\\mu](https://latex.codecogs.com/png.latex?%5Cmu "\mu"),
+![\\rho](https://latex.codecogs.com/png.latex?%5Crho "\rho"), the 4
+diagonal variance terms ![sigma\_{xx} \\forall x \\in
+{g,i,e,o}](https://latex.codecogs.com/png.latex?sigma_%7Bxx%7D%20%5Cforall%20x%20%5Cin%20%7Bg%2Ci%2Ce%2Co%7D "sigma_{xx} \forall x \in {g,i,e,o}"),
+and the off-diagonal variance terms in the lower or upper triangle of
+![\\Sigma](https://latex.codecogs.com/png.latex?%5CSigma "\Sigma").

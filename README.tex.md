@@ -28,3 +28,6 @@ $$
 
 We are unfortunately constrained initially to a block-diagonal formulation 
 so that the system remains identifiable. Aruoba et. al. suggest two approaches to relaxing this assumption which I will try to incorporate later.
+
+As a result of this formulation, we need to estimate 9 parameters: $\mu$, $\rho$, the 4 diagonal variance terms $sigma_{xx} \forall x \in {g,i,e,o}$, and the off-diagonal variance terms in the lower or upper triangle of $\Sigma$.
+
