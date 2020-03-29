@@ -98,7 +98,7 @@ library(readxl)
 df <- read_xlsx("../data/gdpplus.xlsx")
 df
 
-y_mat <- as.matrix(df[1:208,5:6])
+y_mat <- as.matrix(df[1:nrow(df),5:6])
 
 n_obs <- nrow(y_mat)
 n_param <- ncol(y_mat)
