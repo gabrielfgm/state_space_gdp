@@ -46,12 +46,12 @@ transformed parameters {
 model {
   // priors
   xhat[1] ~ normal(3,10); // initial state prior
-  sigma_state ~ IG(10, 15); // scale of innovations to state prior
+  sigma_state ~ IG(3, 5); // scale of innovations to state prior
   gamma ~ normal(3, 10); // state intercept prior
   theta ~ normal(0.3, 1); // state autoregressive prior
   
   for (p in 1:P) { // scale of innovations to measurement prior
-    sigma_signal[p] ~ IG(10, 15);
+    sigma_signal[p] ~ IG(3, 5);
   }
   
   Omega ~ lkj_corr(1); // prior for Correlation matrix
@@ -61,7 +61,7 @@ model {
 
   // Measurement Equations
   for (t in 2:T) {
-    Y[t, ] ~ multi_normal(rep_row_vector(xhat[t-1], P), Sigma);
+    Y[t, ] ~ multi_normal(rep_row_vector(xhat[t], P), Sigma);
   }
 }
 
