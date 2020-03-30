@@ -61,7 +61,7 @@ model {
 
   // Measurement Equations
   for (t in 2:T) {
-    Y[t, ] ~ multi_normal(rep_row_vector(xhat[t-1], 2), Sigma);
+    Y[t, ] ~ multi_normal(rep_row_vector(xhat[t-1], P), Sigma);
   }
 }
 
