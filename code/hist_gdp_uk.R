@@ -22,7 +22,7 @@ data <- format_data(y_mat = y_mat)
 
 ## Estimate
 fit_uk_gdp <- stan("ss_block_diagonal.stan", data = data, 
-                    chains = 4, iter = 6000)
+                    chains = 4, iter = 8000)
 
 ## Diagnosis of small model
 

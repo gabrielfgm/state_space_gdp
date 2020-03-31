@@ -1,14 +1,8 @@
-//
-//
+#include inverse_gaussian.stan
+
 // This Stan program defines a simple model, with a
 // vector of values 'y' modeled as normally distributed
 // with mean 'mu' and standard deviation 'sigma'.
-functions { // to match published paper. stolen from here https://groups.google.com/forum/#!msg/stan-users/sW61HeIT24I/UaLcCHPABQAJ
-   // ignoring the 2pi constant
-   real IG_log(real x, real mu, real shape){
-     return 0.5 * log(shape) - 1.5 * log(x) - shape * square( (x - mu) / mu) / x;
-   }
-}
 
 data {
   int T; // number of obs
