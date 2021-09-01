@@ -1,11 +1,8 @@
 library(tidyverse)
 library(tidybayes)
-library(rstan)
+library(cmdstanr)
 library(bayesplot)
 library(shinystan)
-
-options(mc.cores = parallel::detectCores())
-rstan_options(auto_write = TRUE)
 
 ## Load historical data
 
@@ -20,24 +17,25 @@ source("format_data.R")
 
 data <- format_data(y_mat = y_mat)
 
+## compile model
+
+ss_block_diagonal <- cmdstan_model("ss_block_diagonal.stan", include_path = ".")
+
 ## Estimate
-fit_uk_gdp <- stan("ss_block_diagonal.stan", data = data, 
-                    chains = 4, iter = 8000)
+fit_uk_gdp <- ss_block_diagonal$sample(data = data, parallel_chains = 4)
 
 ## Diagnosis of small model
 
 # check gamma, theta, etc. coefficients look similar 
-plot(fit_uk_gdp, pars = c("gamma", "theta", "sigma_signal", 
-                           "sigma_state", "Omega"))
+mcmc_hist(fit_uk_gdp$draws(variables = c("gamma", "theta", "sigma_signal", 
+                                         "sigma_state", "Omega")))
 
-summary(fit_uk_gdp, pars = c("gamma", "theta", "sigma_signal",
-                              "sigma_state", "Omega"), 
-        probs = c(0.25, 0.5, 0.75))$summary
+fit_uk_gdp$summary(variables = c("gamma", "theta", "sigma_signal",
+                     "sigma_state", "Omega"))
 
 # extract median estimates
-sum_xhat <- as_tibble(summary(fit_uk_gdp, 
-                              pars = "xhat", 
-                              probs = c(0.1, 0.5, 0.9))$summary)
+sum_xhat <- fit_uk_gdp$summary(variables = "xhat", 
+                               ~quantile(.x, c(.1, .5, .9)))
 
 sum_xhat$date <- gdps %>% slice(-1) %>% .$Date
 
@@ -66,4 +64,4 @@ sum_xhat %>%
 ## Model diagnostics
 # Check for problems in estimation
 
-uk_gdp_diag <- launch_shinystan(fit_uk_gdp)
+fit_uk_gdp$cmdstan_diagnose()

@@ -4,16 +4,13 @@
 
 library(tidyverse)
 library(tidybayes)
-library(rstan)
+library(cmdstanr)
 library(bayesplot)
-
-options(mc.cores = parallel::detectCores())
-rstan_options(auto_write = TRUE)
 
 ## Generate some fake data
 
 # dimensions
-n_obs <- 1000
+n_obs <- 100
 n_param <- 2
 
 # True parameters 
@@ -40,32 +37,35 @@ for (i in 2:n_obs) {
 
 # observables
 
-y_mat <- cbind(true_state+eps_g_1, true_state + eps_g_2)
+y_mat <- tibble(true_state+eps_g_1, true_state + eps_g_2)
 
 ## Fitting the model
+source("format_data.R")
+data <- format_data(y_mat = y_mat)
 
-data <- list(T = n_obs, P = n_param, Y = y_mat)
+## compile model
+ss_block_diagonal <- cmdstan_model("ss_block_diagonal.stan", include_paths = ".")
 
-fit_stan <- stan("ss_block_diagonal.stan", data = data, 
-                 chains = 4, iter = 4000)
+fit_stan <- ss_block_diagonal$sample(data = data, chains = 4, parallel_chains = 4)
 
 ## Diagnosis of small model
 
 # check gamma
-plot(fit_stan, pars = "gamma") + geom_vline(xintercept = true_gamma)
+mcmc_recover_hist(fit_stan$draws(variables = "gamma"), true = true_gamma)
 
 # check theta
-plot(fit_stan, pars = "theta") + geom_vline(xintercept = true_theta)
+mcmc_recover_hist(fit_stan$draws(variables = "theta"), true = true_theta)
 
 # check Sigma
-plot(fit_stan, pars = "Sigma")
+mcmc_hist(fit_stan$draws(variables = "Sigma"))
 
 # check variances
-plot(fit_stan, pars = "sigma_signal") + geom_vline(xintercept = true_sigma_g)
-plot(fit_stan, pars = "sigma_state") + geom_vline(xintercept = true_sigma_s)
+mcmc_recover_hist(fit_stan$draws(variables = "sigma_signal"), true = true_sigma_g)
+mcmc_recover_hist(fit_stan$draws(variables = "sigma_state"), true = true_sigma_s)
 
 # extract median estimates
-sum_xhat <- as_tibble(summary(fit_stan, pars = "xhat", probs = c(0.1, 0.5, 0.9))$summary)
+sum_xhat <- fit_stan$summary(variables = "xhat", 
+                               ~quantile(.x, c(.1, .5, .9)))
 
 sum_xhat$true_state <- true_state
 
@@ -96,53 +96,63 @@ sum_xhat %>%
 library(readxl)
 
 df <- read_xlsx("../data/gdpplus.xlsx")
-df
+df %>% dim()
 
-y_mat <- as.matrix(df[1:nrow(df),5:6])
-
-n_obs <- nrow(y_mat)
-n_param <- ncol(y_mat)
+y_mat <- df %>% filter(OBS_YEAR < 2012) %>% select(GRGDP_DATA, GRGDI_DATA)
 
 ## Fitting the model
 
-data <- list(T = n_obs, P = n_param, Y = y_mat)
+data <- format_data(y_mat)
 
-fit_stan_gdp <- stan("ss_block_diagonal.stan", data = data, 
-                     chains = 4, iter = 4000)
+fit_stan_gdp <- ss_block_diagonal$sample(data = data, parallel_chains = 4, iter_sampling = 4000)
 
 ## Diagnosis of small model
 
 # check gamma, theta, etc. coefficients look similar 
-plot(fit_stan_gdp, pars = c("gamma", "theta", "sigma_signal", 
-                            "sigma_state", "Sigma"))
+mcmc_intervals(fit_stan_gdp$draws(variables = c("gamma", "theta", "sigma_signal", 
+                                                "sigma_state", "Sigma")))
 
-summary(fit_stan_gdp, pars = c("gamma", "theta", 
-                               "sigma_state", "Sigma"), 
-        probs = c(0.25, 0.5, 0.75))$summary
+
+# check against their point estimates
+fit_stan_gdp$summary(variables = c("gamma", "theta", "sigma_state"))
+
+# gamma and theta nearly perfect but sigma-state much smaller
+# wait actually should be squared so fine.
+
+fit_stan_gdp$summary(variables = c("Sigma"))
+# also close 
 
 # Plot the estimated state against the true
 
-# mcmc_intervals(fit_stan, regex_pars = "xhat") + coord_flip()+ 
-#   theme(axis.text.x = element_text(angle = 90, hjust = 1))
+mcmc_recover_scatter(fit_stan_gdp$draws(variables = "xhat"), 
+                     true = df %>% filter(OBS_YEAR < 2012) %>% .$GDPPLUS_DATA)
 
 # extract median estimates
-sum_xhat <- as_tibble(summary(fit_stan_gdp, pars = "xhat", probs = c(0.1, 0.5, 0.9))$summary)
+sum_xhat <- fit_stan_gdp$summary(variables = "xhat", 
+                               ~quantile(.x, c(.1, .5, .9)))
 
-sum_xhat$true_state <- df$GDPPLUS_DATA[1:208]
+sum_xhat$true_state <- df %>% filter(OBS_YEAR < 2012) %>% .$GDPPLUS_DATA
+sum_xhat <- bind_cols(sum_xhat, y_mat)
 
 sum_xhat %>% 
-  ggplot(aes(x = 1:n_obs, y = `50%`)) + 
+  ggplot(aes(x = 1:nrow(sum_xhat), y = `50%`)) + 
   geom_line(aes(color = "Estimated State")) + 
+  geom_line(aes(y = GRGDP_DATA, color = "Production")) + 
+  geom_line(aes(y = GRGDI_DATA, color = "Income")) +
   geom_line(aes(y = true_state, color = "GDPPlus Fed")) + 
   geom_ribbon(aes(ymin = `10%`, ymax = `90%`), alpha=.4, fill = "grey") +
   hrbrthemes::theme_ipsum() + 
   labs(title = "Estimated State and 80% Credible Interval", 
        color = "Legend",
        x = "Time", y = "Posterior Median + 80% CI") +
-  scale_color_manual(values = c("GDPPlus Fed" = "coral", "Estimated State" = "black")) +
+  scale_color_manual(values = c("GDPPlus Fed" = "coral", 
+                                "Estimated State" = "black",
+                                "Production" = "steelblue",
+                                "Income" = "green")) +
   theme(legend.position = "bottom")
 
 sum_xhat %>% 
+  slice(-1) %>% 
   ggplot(aes(true_state, `50%`)) +
   geom_point() +
   hrbrthemes::theme_ipsum() +
