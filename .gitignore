@@ -4,4 +4,6 @@
 .DS_Store
 ~$a-*
 code/ss_block_diagonal
+code/ss_block_diagonal_weights
+code/local_level_components
 pat.txt

@@ -104,7 +104,9 @@ y_mat <- df %>% filter(OBS_YEAR < 2012) %>% select(GRGDP_DATA, GRGDI_DATA)
 
 data <- format_data(y_mat)
 
-fit_stan_gdp <- ss_block_diagonal$sample(data = data, parallel_chains = 4, iter_sampling = 4000)
+fit_stan_gdp <- ss_block_diagonal$sample(data = data, 
+                                         parallel_chains = 4, 
+                                         iter_sampling = 4000)
 
 ## Diagnosis of small model
 
@@ -114,13 +116,42 @@ mcmc_intervals(fit_stan_gdp$draws(variables = c("gamma", "theta", "sigma_signal"
 
 
 # check against their point estimates
-fit_stan_gdp$summary(variables = c("gamma", "theta", "sigma_state"))
+aruoba <- tibble(mean = c(3.06, .62, 5.17, 
+                          3.86, 1.43, 2.7),
+                 `25%` = c(2.77, .57, 4.39,
+                           3.34, .96, 2.25),
+                 `75%` = c(3.34, .68, 5.95,
+                           4.48, 1.95, 3.22),
+                 Study = "Aruoba et. al.",
+                 params = c("mu", "rho", "sigma_gg", 
+                            "sigma_ee", "sigma_ei", "sigma_ii"))
 
-# gamma and theta nearly perfect but sigma-state much smaller
-# wait actually should be squared so fine.
+param_comp <- fit_stan_gdp$summary(variables = c("gamma", "theta", "sigma_state", "Sigma"),
+                     mean, ~quantile(.x, c(.25, .75))) %>% 
+  filter(variable != "Sigma[1,2]") %>% 
+  mutate(Study = "Mesevage",
+         params = c("mu", "rho", "sigma_gg", 
+                    "sigma_ee", "sigma_ei", "sigma_ii")) %>% 
+  select(-variable) %>% 
+  bind_rows(aruoba)
 
-fit_stan_gdp$summary(variables = c("Sigma"))
-# also close 
+param_comp[param_comp$Study == "Mesevage" & param_comp$params == "sigma_gg", 1:3] <-
+  param_comp[param_comp$Study == "Mesevage" & param_comp$params == "sigma_gg", 1:3]^2 %>% 
+  round(2)
+
+param_comp
+
+# plot parameter comparisons
+
+param_comp %>% 
+  ggplot(aes(Study, mean, ymin = `25%`, ymax = `75%`, color = Study)) + 
+  facet_wrap(~params, scales = "free") +
+  geom_pointrange() +
+  hrbrthemes::theme_ipsum() +
+  ggtitle("Comparison of parameter estimates and inter-quartile ranges",
+          subtitle = "Stan implementation vs Aruoba et. al.")
+
+ggsave("../figures/param_compare.png", width = 8, height = 5, dpi = 500)
 
 # Plot the estimated state against the true
 
@@ -129,7 +160,7 @@ mcmc_recover_scatter(fit_stan_gdp$draws(variables = "xhat"),
 
 # extract median estimates
 sum_xhat <- fit_stan_gdp$summary(variables = "xhat", 
-                               ~quantile(.x, c(.1, .5, .9)))
+                               ~quantile(.x, c(.025, .5, .975)))
 
 sum_xhat$true_state <- df %>% filter(OBS_YEAR < 2012) %>% .$GDPPLUS_DATA
 sum_xhat <- bind_cols(sum_xhat, y_mat)
@@ -137,19 +168,17 @@ sum_xhat <- bind_cols(sum_xhat, y_mat)
 sum_xhat %>% 
   ggplot(aes(x = 1:nrow(sum_xhat), y = `50%`)) + 
   geom_line(aes(color = "Estimated State")) + 
-  geom_line(aes(y = GRGDP_DATA, color = "Production")) + 
-  geom_line(aes(y = GRGDI_DATA, color = "Income")) +
   geom_line(aes(y = true_state, color = "GDPPlus Fed")) + 
-  geom_ribbon(aes(ymin = `10%`, ymax = `90%`), alpha=.4, fill = "grey") +
+  geom_ribbon(aes(ymin = `2.5%`, ymax = `97.5%`), alpha=.4, fill = "grey") +
   hrbrthemes::theme_ipsum() + 
-  labs(title = "Estimated State and 80% Credible Interval", 
+  labs(title = "Estimated State and 95% Credible Interval", 
        color = "Legend",
-       x = "Time", y = "Posterior Median + 80% CI") +
+       x = "Time", y = "Posterior Median + 95% CI") +
   scale_color_manual(values = c("GDPPlus Fed" = "coral", 
-                                "Estimated State" = "black",
-                                "Production" = "steelblue",
-                                "Income" = "green")) +
+                                "Estimated State" = "black")) +
   theme(legend.position = "bottom")
+
+ggsave("../figures/gdpplus_compare.png", width = 8, height = 5, dpi = 500)
 
 sum_xhat %>% 
   slice(-1) %>% 
