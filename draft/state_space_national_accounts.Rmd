@@ -195,6 +195,18 @@ e_S \\
 \Big)
 $$
 
+Modelling the weights is a trickier problem. There are only 
+two free parameters for the weights as they must form a simplex.
+In Stan we can define the weights as a simplex and then model
+the parameters arbitrarily and the sampler will respect
+the sum constraint.
+
+There are only four observed dates. We want a parameterization
+that reflects that 1.) the exact weights are known only 
+approximately, 2.) the weights should be most similar 
+to the nearest historical measurement, and 3.) the
+precision with which the weights are known should be
+greater as we approach an observed weight.
 
 # Works Cited
 

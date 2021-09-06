@@ -7,7 +7,8 @@ data {
   int T; // number of obs
   int P; // number of observed variables
   matrix[T,P] Y; //dataset of generated series
-  matrix[T,P] weights;
+  matrix[T,P] weights_ob; // must put observed weight at ob 1 and T
+  vector[T] sigma_weights
 }
 
 parameters {
@@ -22,26 +23,24 @@ parameters {
 
 transformed parameters {
   cov_matrix[P] Sigma; // multivariate cov mat for signal
-  
+
   Sigma = quad_form_diag(Omega, sigma_signal); // Sigma
+
 }
 
 model {
   // priors
   xhat[1,] ~ normal(20,10);
+
   sigma_state ~ normal(1, 5); 
   gamma ~ normal(0, 1);
   theta ~ normal(0, 1);
   sigma_signal ~ normal(1, 5);
   Omega ~ lkj_corr(1); // prior for Correlation matrix
 
-  for (t in 1:T) {
-    w[t,] ~ dirichlet(rep_vector(1, P));
-  }
-
   // weight estimation
   for (p in 1:P) {
-    weights[,p] ~ normal(w[,p], .1);
+    w[,p] ~ normal(weights_ob[,p], sigma_weights[,p]);
   }
 
   // State Equation
