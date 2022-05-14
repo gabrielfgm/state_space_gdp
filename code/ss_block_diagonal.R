@@ -46,7 +46,9 @@ data <- format_data(y_mat = y_mat)
 ## compile model
 ss_block_diagonal <- cmdstan_model("ss_block_diagonal.stan", include_paths = ".")
 
-fit_stan <- ss_block_diagonal$sample(data = data, chains = 4, parallel_chains = 4)
+fit_stan <- ss_block_diagonal$sample(data = data, 
+                                     chains = 4, parallel_chains = 4,
+                                     adapt_delta = .95)
 
 ## Diagnosis of small model
 
@@ -148,6 +150,7 @@ param_comp %>%
   facet_wrap(~params, scales = "free") +
   geom_pointrange() +
   hrbrthemes::theme_ipsum() +
+  scale_color_viridis_d(option = "plasma", end = .7) +
   ggtitle("Comparison of parameter estimates and inter-quartile ranges",
           subtitle = "Stan implementation vs Aruoba et. al.")
 
